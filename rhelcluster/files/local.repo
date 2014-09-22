@@ -1,0 +1,5 @@
+[local.repo]
+name=Centos-localrepo
+enabled=1
+baseurl=http://192.168.122.10/centos-repo
+gpgkeycheck=0
