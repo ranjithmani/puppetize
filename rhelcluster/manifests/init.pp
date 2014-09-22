@@ -2,6 +2,11 @@
 #created on 15-Aug-2014
 #created by Ranjith Mani
 #please feel free to modify this class so that it looks so meaningful and effective.
+#Prequestis:
+#two rhel6.5/centos6.5 machines on the same subnet.
+#hostname and ip should be:
+#clnode1 ---->192.168.122.17
+#clnode2 ---->192.168.122.18
 class rhelcluster{
 file {'/etc/hosts':
 	ensure	=>'file',
