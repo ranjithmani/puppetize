@@ -44,7 +44,7 @@ file {'/etc/cluster/cluster.conf':
 	}
 service {'cman':
 	ensure		=>'running',
-	enabled	=>'true',
+	enabled		=>'true',
 	hastatus	=>'true',
 	harestart	=>'true',
 	require		=>Yumgroup['High Availability'],
