@@ -1,0 +1,61 @@
+class spacewalk {
+
+		service {'iptables':
+			ensure	=> "stopped",
+			enable	=> "false",
+			}
+
+		service {'ip6tables':
+			ensure	=> "stopped",
+			enable	=> "false",
+			}
+			
+                   file { '/root/answers':
+			ensure	=> "present"
+			user	=> "root",
+			group	=> "root",
+			mode	=> "666",
+			content	=> " admin-email = root@localhost \n ssl-set-org = Nextstep4it \n ssl-set-org-unit = IT \n ssl-set-city = Delhi \n ssl-set-state = Delhi \n ssl-set-country = IN \n ssl-password = spacewalkpasswd \n ssl-set-email = root@localhost \n ssl-config-sslvhost = Y \n db-backend=postgresql \n db-name=spacewalkdb \n db-user=spacewalk \n db-password=spacewalkpasswd \n db-host=localhost \n db-port=5432 \n enable-tftp=Y ",
+			}
+			
+
+		   exec { "disable selinux on $hostname":
+			user	=> "root",
+			command	=> "/usr/sbin/setenforce 0"
+			unless 	=> "/usr/sbin/sestatus | /bin/egrep -q '(Current mode:.*permissive|SELinux.*disabled)'";
+			}
+			
+		yumrepo { 'Base-repo':
+			name	=> "CentOS-$releasever - Base",
+			ensure	=> "present",			
+			baseurl	=> "http://mirrors.gina.alaska.edu/centos/$releasever/os/$basearch/",
+			enabled	=> "1",
+			gpgcheck=> "1",
+			gpgkey	=> "http://mirrors.gina.alaska.edu/centos/RPM-GPG-KEY-CentOS-6",
+			}
+
+		yumrepo { 'jpackage-generic':
+			name	=> "jpackage repo",
+			ensure	=> "present",
+			baseurl	=> "http://www.jpackage.org/mirrorlist.php?dist=generic&type=free&release=5.0",
+			enabled	=> "1",
+			gpgcheck=> "1",
+			gpgkey 	=> "http://www.jpackage.org/jpackage.asc",
+			}
+
+		Package { 'spacewalk-setup-embedded-postgresql':
+			ensure	=> "present",
+			}
+
+		Package { 'spacewalk-postgresql':
+			ensure	=> "present",
+			}
+
+		   exec { "sapcewalk-setup":
+			user	=> "root",
+			command => "/usr/bin/spacewalk-setup --disconnected -answer-file=/root/answers"
+			onlyif	=> "/bin/ls /root/answers"
+			unless	=> "/usr/sbin/spacewalk-service status |/bin/grep -i "running" "
+			}					
+			
+}
