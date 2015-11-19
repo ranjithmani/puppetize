@@ -1,0 +1,479 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>RedHat - LVM cheatsheet</title>
+<style type="text/css">
+<!--
+body {
+#       background-color: #CCDD99;
+        background-color: #BDB76B;
+}
+-->
+</style>
+<link href="../../default.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+<p class="header">Logical Volume Manager (LVM)</p>
+<p>This is a quick and dirty cheat sheet on LVM using Linux, I have highlighted many of the common attributes for each command however this is not an extensive list, make sure you look up the command. </p>
+<p>With the pvs, vgs and lvs commands, the number of verboses added the more verbose information for example pvs -vvvvv </p>
+<table width="900" border="1">
+  <tr bgcolor="#CCCCCC">
+    <td colspan="2"><div align="center"><strong>Directory and Files</strong></div></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>Directories and Files </strong></td>
+    <td>## Directories<br>
+      /etc/lvm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- default lvm directory location <br>
+      /etc/lvm/backup&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- where the automatic backups go <br>
+      /etc/lvm/cache&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- persistent filter cache <br>
+      /etc/lvm/archive
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- where automatic archives go after a volume group change <br>
+      /var/lock/lvm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- lock files to prevent metadata corruption       <br>
+      <br>
+      # Files     <br>
+      /etc/lvm/lvm.conf&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- main lvm configuration file <br>
+    $HOME/.lvm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- lvm history </td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td colspan="2"><div align="center"><strong>Tools</strong></div></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>diagnostic</strong></td>
+    <td>lvmdump<br>
+      lvmdump -d &lt;dir&gt;<br>
+      dmsetup [info|ls|status]<br>
+      <br>
+      Note: by default the lvmdump command creates a tar ball</td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td colspan="2"><div align="center"><strong>Physical Volumes </strong></div></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>display</strong></td>
+    <td><p>pvdisplay -v <br>
+      pvs -v<br>
+      pvs -a<br>
+      pvs --segments (see the disk segments used) <br>
+        <br>
+        <strong>pvs  attributes are: </strong><br>
+        1. (a)llocatable <br>
+        2. e(x)ported </p>
+    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>scanning</strong></td>
+    <td>pvscan -v<br>
+    <br>
+    Note: scans for disks for non-LVM and LVM disks </td>
+  </tr>
+  <tr>
+    <td width="150" bgcolor="#FFFFFF"><strong>adding</strong></td>
+    <td width="734">pvcreate /dev/sdb1<br>
+      <br>
+      ## Create physical volume with specific UUID, used to recover volume groups (see miscellaneous section)
+      <br>
+      pvcreate --uuid &lt;UUID&gt; /dev/sdb1
+      <br>
+    <br>
+    <strong>Common Attributes that you may want to use:</strong><br>
+    <br>
+    -M2 create a LVM2 physical volume </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>removing</strong></td>
+    <td>pvremove /dev/sdb1 </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>checking</strong></td>
+    <td>pvck -v /dev/sdb1 <br>
+    <br>
+    Note: check the consistency of the LVM metadata </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>change physical attributes </strong></td>
+    <td><p>## do not allow allocation of extents on this drive, however the partition must be in a vg otherwise you get an error <br>
+      pvchange -x n /dev/sdb1<br>
+      <br>
+    <strong>Common Attributes that you may want to use:</strong></p>
+    <p>--addtag add a tag<br>
+      -x allowed to allocate extents<br>
+      -u change the uuid
+    </p></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>moving</strong></td>
+    <td>pvmove -v /dev/sdb2 /dev/sdb3 <br>
+    <br>
+    Note: moves any used extents from this volume to another volume, in readiness to remove that volume. However you cannot use this on mirrored volumes, you must convert back to non-mirror using &quot;lvconvert -m 0&quot; </td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td colspan="2"><div align="center"><strong>Volume Groups</strong></div></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>display</strong></td>
+    <td>vgdisplay -v <br>
+      vgs -v<br>
+      vgs -a -o +devices
+      <br>
+      <br>
+      <strong>vgs flags:</strong><br>
+      #PV - number of physical devices<br>
+      #LV - number of configured volumes&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+      <br>
+      <strong>vgs
+      attributes are: </strong><br>
+      1. permissions (r)|(w)<br>
+      2. resi(z)eable<br>
+      3. e(x)ported<br>
+      4. (p)artial<br>
+      5. allocation policy - (c)ontiguous, c(l)ing, (n)ormal, (a)nywhere, (i)nherited<br>
+      6. (c)luster</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>scanning </strong></td>
+    <td>vgscan -v </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>creating</strong></td>
+    <td><p>vgcreate VolData00 /dev/sdb1 /dev/sdb2 /dev/sdb3<br>
+        vgcreate VolData00 /dev/sdb[123]<br>
+        <br>
+        ## Use 32MB extent size <br>
+        vgcreate VolData00 -s 32 /dev/sdb1 <br>
+        <br>
+        <strong>Common Attributes that you may want to use:</strong><br>
+        <br>
+        -l &nbsp;maximum logical volumes<br>
+        -p maximum physical volumes<br>
+        -s physical extent size (default is 4MB)<br>
+        -A autobackup <br>
+      </p>
+    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>extending</strong></td>
+    <td>vgextend VolData00 /dev/sdb3 </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>reducing </strong></td>
+    <td>vgreduce VolData00 /dev/sdb3<br>
+    <br>
+    vgreduce --removemissing --force VolData00 </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>removing</strong></td>
+    <td>vgremove VolData00<br>
+    <br>
+    <strong>Common Attributes that you may want to use:</strong><br>
+    <br>
+    -f force the removal of any logical volumes </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>checking</strong></td>
+    <td>vgck VolData00 <br>
+    <br>
+    Note: check the consistency of the LVM metadata </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>change volume attributes </strong></td>
+    <td>vgchange -a n VolData00<br>
+    <br>
+    <strong>Common Attributes that you may want to use:</strong> <br>
+    <br>
+    -a control availability of volumes within the group<br>
+    -l &nbsp;maximum logical volumes<br>
+-p maximum physical volumes<br>
+-s physical extent size (default is 4MB)<br>
+-x resizable yes or no (see VG status in vxdisplay) <br> </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>renaming</strong></td>
+    <td>vgrename VolData00 Data_Vol_01<br>
+    <br>
+    note: the volume group must not have any active logical volumes </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>converting metadata type </strong></td>
+    <td>vgconvert -M2 VolData00<br>
+    <br>
+    Note: vgconvert allows you to convert from one type of metadata format to another for example from LVM1 to LVM2, LVM2 offers bigger capacity, clustering and mirroring </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>merging</strong></td>
+    <td>#  the old volumes group will be merged into the new volume group <br>
+      vgmerge New_Vol_Group Old_Vol_Group<br>
+    <br>
+    Note: you must unmount any fielsystems and deactivate the vg that is being merged &quot;vgchange -a n &lt;vg&gt;&quot;, then you can activiate it again afterwards &quot;vgchange -a y &lt;vg&gt;&quot;, then perform a vgscan, dont forget to backup the configuration </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>spliting</strong></td>
+    <td>vgsplit Old_Vol_Group New_Vol_Group [physical volumes] [-n logical volume name] </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>importing</strong></td>
+    <td>vgimport VolData00<br>
+    <br>
+    <strong>Common Attributes that you may want to use:</strong> <br>
+    <br>
+    -a import all exported volume groups </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>exporting</strong></td>
+    <td>## to see if a volume has already been export use &quot;vgs&quot; and look at the third attribute should be a x <br>
+      vgexport VolData00<br>
+      <br>
+      <strong>Common Attributes that you may want to use:</strong> <br>
+      <br>
+-a export all inactive volume groups    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>backing up </strong></td>
+    <td><p>## Backup to default location (/etc/lvm/backup) <br>
+        vgcfgbackup VolData00<br>
+        <br>
+        # Backup to specific location  <br>
+        vgcfgbackup -f /var/backup/VolData00_bkup VolData00</p>
+      <p># Backup to specific location all volume groups (notice the %s)<br>
+        vgcfgbackup -f /var/backup/vg_backups_%s
+        <br>
+        <br>
+    Note: the backup is written in plain text and are by default located in /etc/lvm/backup </p></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>restoring</strong></td>
+    <td>vgcfgrestore -f /var/backup/VolData00_bkup VolData00<br>
+    <br>
+    <strong>Common Attributes that you may want to use:</strong> <br>
+    <br>
+    -l list backups of file<br>
+    -f backup file<br>
+    -M metadataype 1 or 2 </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>cloning</strong></td>
+    <td>vgimportclone /dev/sdb1<br>
+    <br>
+    Note: used to import and rename duplicated volume group</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>special files </strong></td>
+    <td>vgmknodes VolData00<br>
+    <br>
+    Note: recreates volume group directory and logical volume special files in /dev </td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td colspan="2"><div align="center"><strong>Logical Volumes</strong></div></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>display</strong></td>
+    <td><p>lvdisplay -v <br>
+      lvdisplay --maps&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;display mirror volumes<br>
+      <br>
+        lvs -v<br>
+        lvs -a -o +devices
+        <br>
+        <br>
+        ## lvs commands for mirror volumes
+        <br>
+        lvs -a -o +devices<br>
+        lvs -a -o +seg_pe_ranges --segments</p>
+      <p>## Stripe size <br>
+      lvs -v --segments<br>
+      lvs -a -o +stripes,stripesize</p>
+      <p>## use complex command<br>
+        lvs -a -o +devices,stripes,stripesize,seg_pe_ranges --segments
+        <br>
+        <br>
+        <strong>lvs  attributes are: </strong><br>
+        1. volume type: (m)irrored, (M)irrored without initail sync, (o)rigin, (p)vmove, (s)napshot, invalid (S)napshot, (v)irtual, mirror (i)mage<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mirror (I)mage out-of-sync, under (c)onversion<br>
+2. permissions: (w)rite, (r)ead-only<br>
+3. allocation policy - (c)ontiguous, c(l)ing, (n)ormal, (a)nywhere, (i)nherited<br>
+4. fixed (m)inor <br>
+5. state: (a)ctive, (s)uspended, (I)nvalid snapshot, invalid (S)uspended snapshot, mapped (d)evice present with-out tables,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mapped device present with (i)nactive table <br>
+6. device (o)pen (mounted in other words) </p>
+    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>scanning </strong></td>
+    <td>lvscan -v <br>
+      lvmdiskscan</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>creating</strong></td>
+    <td><p>## plain old volume <br>
+        lvcreate -L 10M VolData00</p>
+      <p>## plain old volume but use extents, use 10 4MB extents (if extent size is 4MB) <br>
+lvcreate -l 10 VolData00<br>
+        <br>
+        ## plain old volume but with a specific name web01<br>
+        lvcreate -L 10M -n web01 VolData00 <br>
+        <br>
+        ## plain old volume but on a specific disk <br>
+        lvcreate -L 10M VolData00        /dev/sdb1<br>
+        <br>
+        ## a striped volume
+        called lvol1 (note the captial i for the stripe size), can use -l (extents) instead of -L <br>
+        lvcreate -i 3 -L 24M -n lvol1 vg01</p>
+      <p>## Mirrored volume<br>
+        lvcreate -L 10M -m1 -n data01 vg01<br>
+        <br>
+        ## Mirrored volume without a mirror log file<br>
+        lvcreate -L 10M -m1 --mirrorlog core -n data01 vg01<br>
+        <br>
+        <strong>Common Attributes that you may want to use:</strong> <br>
+        <br>
+        -L size of the volume [kKmMgGtT]<br>
+        -l number of extents<br>
+        -C contiguous [y|n]<br>
+        -i stripes<br>
+        -I stripe size<br>
+        -m mirrors<br>
+        --mirrorlog
+        <br>
+    -n volume name</p></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>extending</strong></td>
+    <td><p>lvextend -L 20M /dev/VolData00/vol01 </p>
+    <p><strong>Common Attributes that you may want to use:</strong> </p>
+    <p>-L size of the volume [kKmMgGtT]<br>
+-l number of extents<br>
+-C contiguous [y|n]<br>
+-i stripes<br>
+-I stripe size<br>
+<br>
+Note: you can extend a ext2/ext3 filesystem using the &quot;resize2fs&quot; or &quot;fsadm&quot; command <br>
+<br>
+fsadm resize /dev/VolData01/data01<br>
+resize2fs -p /dev/mapper/VolData01-data01 [size] <br>
+<br>
+The -p option displays bars of progress while extendingthe filesystem    </p></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>reducing/resizing </strong></td>
+    <td><p>lvreduce -L 5M /dev/VolData00/vol01<br>
+        lvresize -L 5M /dev/VolData00/vol01<br>
+        <br>
+    Note: rounding will occur when extending and reducing volumes to the next extent (4MB by default), you can use resize2fs or fsadm to shrink the filesystem</p>
+    <p>fsadm resize /dev/VolData01/data01 [size] <br>
+      resize2fs -p /dev/mapper/VolData01-data01 [size]  </p></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>removing</strong></td>
+    <td>lvremove /dev/VolData00/vol01</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>adding a mirror to a non-mirrored volume </strong></td>
+    <td><p>lvconvert -m1 --mirrorlog core /dev/VolData00/vol01 /dev/sdb2 </p>
+    <p>Note: you can also use the above command to remove a unwanted log </p></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>removing a mirror from a mirrored volume</strong></td>
+    <td><p>lvconvert -m0 /dev/VolData00/vol01 /dev/sdb2</p>
+    <p>Note: the disk in the command is the one you want to remove </p></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF">Mirror a volume that has stripes</td>
+    <td>lvconvert --stripes 3 -m1 --mirrorlog core /dev/VolData00/data01 /dev/sdd1 /dev/sde1 /devsdf1 </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>change volume attributes </strong></td>
+    <td><p>lvchange -a n /dev/VolData00/vol01<br>
+        <br>
+        <strong>Common Attributes that you may want to use:</strong> </p>
+    <p>-a availability<br>
+      -C contiguous [y|n]<br>
+    </p>
+    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>renaming</strong></td>
+    <td>lvrename /dev/VolData00/vol_old /dev/VolData00/vol_new</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>snapshotting</strong></td>
+    <td>lvcreate --size 100M --snapshot -name snap /dev/vg01/data01 </td>
+  </tr>
+  <tr bgcolor="#CCCCCC">
+    <td colspan="2"><div align="center"><strong>Miscellaneous</strong></div></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>Simulating a disk failure </strong></td>
+    <td>dd if=/dev/zero of=/dev/sdb2 count=10 </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>reparing a failed mirror no LVM corruption </strong></td>
+    <td>## check volume, persume /dev/sdb2 has failed <br>
+      lvs -a -o +devices<br>
+      <br>
+      # remove the failed disk from the volume (if not already done so) , this will convert volume into a non-mirrored volume <br>
+      vgreduce --removemissing --force VolData00<br>
+      <br>
+      ## replace the disk physically, remember to partion it with type 8e <br>
+      fdisk /dev/sdb<br>
+      ........
+      <br>
+      <br>
+      ## add new disk to LVM<br>
+      pvcreate /dev/sdb2<br>
+      <br>
+      ## add the disk back into volume group<br>
+      vgextend VolData00 /dev/sdb2<br>
+      <br>
+      ## mirror up the volume<br>
+      lvconvert -m1 --mirrorlog core /dev/VolData00/vol02 /dev/sdb2</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>corrupt LVM metadata without replacing drive </strong></td>
+    <td># attempt to bring the volume group online<br>
+      vgchange -a y VolData00<br>
+      <br>
+      # Restore the LVM configation<br>
+      vgcfgrestore VolData00<br>
+      <br>
+      # attempt to bring the volume grou online<br>
+vgchange -a y VolData00<br>
+<br>
+# file system check<br>
+e2fsck /dev/VolData00/data01 </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFFFF"><strong>corrupt LVM metadata but replacing the faulty disk </strong></td>
+    <td><p># attempt to bring the volume group online but you get UUID conflict errors make note of the UUID number <br>
+  vgchange -a y VolData00<br>
+  vgchange -a n VolData00
+  <br>
+  <br>
+  ## sometimes it my only be a logical volume problem<br>
+  lvchange -a y /dev/VolData00/web02<br>
+  lvchange -a n /dev/Voldata00/web02
+  <br>
+  <br>
+  ## replace the disk physically, remember to partion it with type 8e <br>
+  fdisk /dev/sdb<br>
+  ........<br>
+  <br>
+  # after replacing the faulty drive the disk must have the previuos UUID number or you can get it from /etc/lvm directory <br>
+  pvcreate --uuid &lt;<strong>previous UUID number taken from above command</strong>&gt; /dev/sdb2<br>
+  <br>
+  # Restore the LVM configation<br>
+  vgcfgrestore VolData00<br>
+  <br>
+  # attempt to bring the volume group online or logical volume <br>
+  vgchange -a y VolData00<br>
+  lvchange -a y /dev/VolData00/web02
+  <br>
+  <br>
+  # file system check<br>
+  e2fsck /dev/VolData00/data01 </p>
+    <p>Note: if you have backed the volume group configuration you can obtain the UUID number in the backup file by default located in /etc/lvm/backup or running &quot;pvs -v&quot; </p></td>
+  </tr>
+</table>
+<p>For other LVM's and Array utilities see my <a href="../../main/lvm.htm">LVM central</a> page</p>
+</body>
+</html>
